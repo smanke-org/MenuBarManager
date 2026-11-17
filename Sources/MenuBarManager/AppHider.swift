@@ -29,6 +29,9 @@ final class AppHider {
     /// Shown apps taken off the bar while the hidden ones are out on a notched
     /// screen, so the hidden ones have room right of the notch.
     var swappedOut: Set<String> = []
+    /// Shown apps stepping aside so the chevron fits on a notched screen. Rebuilt
+    /// each launch; they come back when the hidden items are shown.
+    var setAside: Set<String> = []
 
     private init() {
         let raw = defaults.dictionary(forKey: Self.sectionsKey) as? [String: String] ?? [:]
@@ -53,7 +56,7 @@ final class AppHider {
 
     /// Apps whose items are off the bar in this state.
     func appsToHide(expanded: Bool, includingAlwaysHidden: Bool) -> Set<String> {
-        (expanded ? swappedOut : []).union(sections.compactMap { id, section in
+        (expanded ? swappedOut : setAside).union(sections.compactMap { id, section in
             switch section {
             case .shown: nil
             case .hidden: expanded ? nil : id

@@ -74,7 +74,7 @@ struct GeneralSettings: View {
             }
             Toggle("Show when the pointer rests on the chevron", isOn: $showOnHover)
             Toggle("Show or hide by scrolling over the menu bar", isOn: $showOnScroll)
-            Toggle("On screens with a notch, make room by hiding Shown items while hidden ones are out", isOn: $swapOnNotch)
+            Toggle("Set Shown items aside while hidden ones are out", isOn: $swapOnNotch)
             Picker("Hide again after", selection: $delay) {
                 Text("15 seconds").tag(15.0)
                 Text("30 seconds").tag(30.0)

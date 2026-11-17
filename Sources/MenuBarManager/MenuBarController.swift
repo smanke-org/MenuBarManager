@@ -49,6 +49,7 @@ final class MenuBarController {
     /// the order too (items appear and vanish), which is harmless: those apps are
     /// already in the section their side implies.
     private func checkOrder() {
+        keepRoomForChevron()
         let order = MenuBarItems.drawn().compactMap(\.bundleID)
         guard order != lastOrder else { return }
         let first = lastOrder.isEmpty
@@ -161,15 +162,47 @@ final class MenuBarController {
         scheduleCollapse()
     }
 
-    // MARK: Swap on notched screens
+    // MARK: Room for the chevron
+
+    /// On a screen with a notch the chevron can end up behind macOS's overflow. When
+    /// that happens (collapsed, bar settled), the narrowest Shown app with a single
+    /// item steps aside, on every screen, until the chevron fits. Apps with several
+    /// items, like iStat Menus, are never picked.
+    private func keepRoomForChevron() {
+        guard !isExpanded, Date().timeIntervalSince(lastChange) > 3 else { return }
+        let me = Bundle.main.bundleIdentifier
+        let drawn = MenuBarItems.drawn()
+        let notched = NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }
+        let missing = notched.contains { screen in
+            let x = screen.frame.minX...screen.frame.maxX
+            let onScreen = drawn.filter { x ~= $0.frame.midX }
+            return !onScreen.isEmpty && !onScreen.contains { $0.bundleID == me }
+        }
+        guard missing else { return }
+        let hider = AppHider.shared
+        var widths: [String: (count: Int, width: CGFloat)] = [:]
+        let main = NSScreen.screens.first { $0.safeAreaInsets.top == 0 } ?? NSScreen.screens[0]
+        for item in drawn where main.frame.minX...main.frame.maxX ~= item.frame.midX {
+            guard let id = item.bundleID, id != me, !id.hasPrefix("com.apple."),
+                  hider.section(for: id) == .shown, !hider.setAside.contains(id) else { continue }
+            let entry = widths[id] ?? (0, 0)
+            widths[id] = (entry.count + 1, entry.width + item.frame.width)
+        }
+        guard let pick = widths.filter({ $0.value.count == 1 }).min(by: { $0.value.width < $1.value.width })?.key else { return }
+        hider.setAside.insert(pick)
+        hider.apply(expanded: false, includingAlwaysHidden: false)
+        lastChange = Date()
+    }
+
+    // MARK: Swap
 
     /// On a screen with a notch there's rarely room for the hidden items, so while
     /// they're out, the Shown apps step aside (Settings › General, on by default).
+    /// While the hidden items are out, the Shown apps step aside on every screen, so
+    /// the bar behaves the same everywhere and a notch never crowds the hidden items
+    /// out (Settings › General, on by default).
     private func shouldSwap() -> Bool {
-        guard UserDefaults.standard.object(forKey: "swapOnNotch") as? Bool ?? true else { return false }
-        let point = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
-        return (screen?.safeAreaInsets.top ?? 0) > 0
+        UserDefaults.standard.object(forKey: "swapOnNotch") as? Bool ?? true
     }
 
     private func shownAppsOnBar() -> Set<String> {
