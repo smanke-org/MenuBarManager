@@ -47,9 +47,15 @@ final class MenuBarController {
     /// Both are off by default (Settings › General). Hover waits 0.3 s on the chevron;
     /// a scroll anywhere over the menu bar toggles (down shows, up hides).
     private func startWatchingPointer() {
-        pointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .scrollWheel]) { [weak self] event in
-            let type = event.type, deltaY = event.scrollingDeltaY
-            MainActor.assumeIsolated { self?.pointerEvent(type, deltaY: deltaY) }
+        pointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .scrollWheel, .leftMouseUp]) { [weak self] event in
+            let type = event.type, deltaY = event.scrollingDeltaY, command = event.modifierFlags.contains(.command)
+            MainActor.assumeIsolated {
+                if type == .leftMouseUp {
+                    if command { self?.commandDragEnded() }
+                } else {
+                    self?.pointerEvent(type, deltaY: deltaY)
+                }
+            }
         }
     }
 
@@ -75,6 +81,42 @@ final class MenuBarController {
                 hoverWork?.cancel()
                 hoverWork = nil
             }
+        }
+    }
+
+    // MARK: ⌘-drag to arrange
+
+    /// A ⌘-drag in the menu bar may have moved an item across the chevron. Once
+    /// macOS has settled the new order, sections follow the positions: an app whose
+    /// items are all left of the chevron is Hidden; one with any item right of it is
+    /// Shown. Always Hidden apps aren't on the bar, so they keep their section.
+    private func commandDragEnded() {
+        guard isInMenuBar(NSEvent.mouseLocation) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.syncSectionsFromPositions() }
+    }
+
+    func syncSectionsFromPositions() {
+        guard let chevronFrame = chevron.button?.window?.frame else { return }
+        let me = Bundle.main.bundleIdentifier
+        // Only items on the chevron's display; other displays draw their own copy of the bar.
+        let screenX = (NSScreen.screens.first { $0.frame.minX...$0.frame.maxX ~= chevronFrame.midX } ?? NSScreen.main)
+            .map { $0.frame.minX...$0.frame.maxX } ?? chevronFrame.minX...chevronFrame.maxX
+        let items = MenuBarItems.all().filter {
+            guard let id = $0.bundleID, id != me, !id.hasPrefix("com.apple.") else { return false }
+            return $0.frame.minY < 40 && screenX ~= $0.frame.midX
+        }
+        var rightOfChevron: [String: Bool] = [:]
+        for item in items {
+            guard let id = item.bundleID, item.frame.width > 0 else { continue }
+            let right = item.frame.midX > chevronFrame.midX
+            rightOfChevron[id] = (rightOfChevron[id] ?? false) || right
+        }
+        let hider = AppHider.shared
+        for (id, right) in rightOfChevron {
+            let current = hider.section(for: id)
+            guard current != .alwaysHidden else { continue }
+            let wanted: MenuSection = right ? .shown : .hidden
+            if wanted != current { hider.setSection(wanted, for: id) }
         }
     }
 
