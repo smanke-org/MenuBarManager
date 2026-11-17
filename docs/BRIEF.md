@@ -8,8 +8,8 @@ Bundle id: `com.smanke.menubarmanager`
 Bartender and Thaw, which misbehave on recent macOS releases. The worst problem: iStat Menus and other apps keep moving themselves into the hidden area.
 
 ## Main jobs
-1. Click the chevron to show or hide the Hidden section. It collapses again on a click elsewhere or after a timer.
-2. Arrange items in Settings by dragging them between **Shown**, **Hidden** and **Always Hidden**.
+1. Click the chevron to show or hide the Hidden section. It collapses again after a delay.
+2. In Settings › Items, put each app in **Shown**, **Hidden** or **Always Hidden**.
 3. Keep items where they belong. Sections are per app, not per position, so an app in Shown is never hidden, however macOS places its items.
 
 ## Data
