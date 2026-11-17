@@ -44,22 +44,17 @@ Status: done
 
 ## M3 Displays and the notch
 
-### S-009 Drop-down bar
-As the user on a notched MacBook, I see Hidden items in a bar under the menu bar when they would fall behind the notch.
-Screens: dropdown-bar
-Depends: S-002
+### S-009 Make room on a notched screen
+As the user on a notched MacBook, I click the chevron and my Shown items step aside so the Hidden ones fit; clicking again puts both back.
 Acceptance:
-- [unit] The available width is the menu bar width minus the app menus and the notch (auxiliaryTopLeftArea).
-- [snap] The bar shows each item. Clicking one opens that item's own menu (by clicking it while it is briefly placed on screen).
-- [manual] Setting: Drop-down bar = Automatic / Always / Never.
-Status: todo
+- [manual] Only when expanding from a screen with a notch (pointer's screen); setting in General, on by default (verified 2026-11-17).
+Status: done
 
 ### S-010 Every display
 As the user with external displays, I can use the chevron on each display's menu bar.
-Depends: S-009
 Acceptance:
-- [manual] Expanding on a display without a notch shows the items in the menu bar itself when they fit.
-Status: todo
+- [manual] Expanding on a display without a notch adds the Hidden items to the bar; Shown items stay (verified 2026-11-17).
+Status: done
 
 ## M4 Speed
 
