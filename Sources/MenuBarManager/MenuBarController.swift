@@ -61,16 +61,43 @@ final class MenuBarController {
         isExpanded = true
         showsAlwaysHidden = true
         apply()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [self] in collapse() }
+        Task { [self] in
+            try? await Task.sleep(for: .seconds(1))
+            if let target = ProcessInfo.processInfo.environment["APP_DEBUG_PLACE_LEFT_OF"] {
+                await placeOwnItems(leftOf: target)
+            }
+            collapse()
+        }
 
         if let path = ProcessInfo.processInfo.environment["APP_DEBUG_DUMP"] {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [self] in
-                let lines = [("chevron", chevron), ("divider", divider), ("always", alwaysDivider)].map { name, item in
+                let lines = ["trusted=\(AXIsProcessTrusted()) items=\(MenuBarItems.all().map(\.identity))"] + [("chevron", chevron), ("divider", divider), ("always", alwaysDivider)].map { name, item in
                     "\(name) visible=\(item.isVisible) length=\(item.length) frame=\(item.button?.window?.frame ?? .zero)"
                 }
                 try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
             }
         }
+    }
+
+    static let chevronIdentity = "com.smanke.menubarmanager/Show hidden items"
+    static let dividerIdentity = "com.smanke.menubarmanager/Menu Bar Manager divider"
+    static let alwaysIdentity = "com.smanke.menubarmanager/Menu Bar Manager Always Hidden divider"
+
+    /// Puts the chevron left of the item with `identity`, then the divider and the
+    /// Always Hidden divider left of it, in that order. Runs while expanded, when
+    /// the dividers are 1 pt wide.
+    func placeOwnItems(leftOf identity: String) async -> Bool {
+        func find(_ id: String) -> MenuBarItem? { MenuBarItems.all().first { $0.identity == id } }
+        let plan = [(Self.chevronIdentity, identity), (Self.dividerIdentity, Self.chevronIdentity), (Self.alwaysIdentity, Self.dividerIdentity)]
+        for (mover, target) in plan {
+            guard let item = find(mover), let anchor = find(target) else { return false }
+            if ItemMover.isPlaced(mover, .leftOf, of: target), abs(item.frame.maxX - anchor.frame.minX) < 4 { continue }
+            guard await ItemMover.move(item, .leftOf, of: anchor) else {
+                NSLog("Menu Bar Manager: could not move \(mover) left of \(target)")
+                return false
+            }
+        }
+        return true
     }
 
     // MARK: Showing and hiding

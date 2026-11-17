@@ -56,6 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A menu bar app: no Dock icon by default, no window at launch.
         NSApp.setActivationPolicy(.accessory)
         MenuBarController.shared.install()
+        // Reading other apps' menu bar items and moving them needs Accessibility.
+        if !AXIsProcessTrusted() {
+            AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        }
         DispatchQueue.main.async {
             for window in NSApp.windows where window.identifier?.rawValue.hasPrefix("main") == true { window.close() }
         }
