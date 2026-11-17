@@ -63,8 +63,8 @@ final class SettingsTabs: NSTabViewController {
                                                queue: .main) { [weak self] _ in MainActor.assumeIsolated { self?.refit() } }
         tabStyle = .toolbar
         transitionOptions = [.crossfade, .allowUserInteraction]
-        add("Items", "menubar.rectangle", Form { ItemsSettings() }.formStyle(.grouped))
         add("General", "gearshape", GeneralSettings(launchAtLogin: launchAtLogin))
+        add("Items", "menubar.rectangle", Form { ItemsSettings() }.formStyle(.grouped))
     }
 
     required init?(coder: NSCoder) { fatalError() }

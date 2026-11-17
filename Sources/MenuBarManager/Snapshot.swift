@@ -12,7 +12,7 @@ enum Snapshot {
     static var requested: Bool { !(ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? "").isEmpty }
 
     /// The Settings panes, by their toolbar labels.
-    static let settingsTabs = ["Items", "General"]
+    static let settingsTabs = ["General", "Items"]
 
     static func runIfRequested() {
         let env = ProcessInfo.processInfo.environment
