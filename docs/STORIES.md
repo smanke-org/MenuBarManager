@@ -67,13 +67,13 @@ Status: todo
 As the user, I press a shortcut to show or hide the Hidden items, and can change it in the shortcut editor.
 Acceptance:
 - [manual] The default ⌃⌥⌘B works; changing it in the editor takes effect at once; ShortcutsLens can read it.
-Status: todo
+Status: done
 
 ### S-012 Show on hover or scroll
 As the user, I hover over an empty part of the menu bar, or scroll on it, to show the Hidden items.
 Acceptance:
 - [manual] Both are off by default, each has a checkbox, and hovering waits 0.3 s before showing.
-Status: todo
+Status: done
 
 ## M5 System and polish
 
