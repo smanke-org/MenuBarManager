@@ -40,14 +40,8 @@ cp "$bin" "$app/Contents/MacOS/$name"
 mkdir -p "$app/Contents/Helpers"
 cp "$bin" "$app/Contents/Helpers/MenuBarManagerHider"
 sed -e "s/__BUILD__/$(date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
-# The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
-if [[ -d "$here/Icon/AppIcon.icon" ]]; then
-  car="$here/Resources/Assets.car"
-  if [[ ! -f "$car" || -n "$(find "$here/Icon/AppIcon.icon" -newer "$car" | head -1)" ]]; then
-    "$here/tools/make_icon.sh"
-  fi
-  cp -X "$car" "$here/Resources/AppIcon.icns" "$app/Contents/Resources/"
-fi
+# The icon: Tools/make_icns.sh renders Resources/AppIcon.icns (the shared periodic-tile style).
+cp -X "$here/Resources/AppIcon.icns" "$app/Contents/Resources/"
 xattr -cr "$app"
 codesign --force --sign "$identity" "$app/Contents/Helpers/MenuBarManagerHider" 2>&1 | grep -v "replacing existing signature" || true
 codesign --force --sign "$identity" "$app" 2>&1 | grep -v "replacing existing signature" || true

@@ -14,7 +14,7 @@ database and no server. Read `docs/BRIEF.md` and `docs/STORIES.md` first.
 - `Sources/MenuBarManagerKit/` rules and data logic with no SwiftUI. Tests in `Tests/MenuBarManagerKitTests/`.
 - `Package.swift` a Swift package. There is no Xcode project.
 - `build.sh` builds, signs, and installs `/Applications/MenuBarManager.app`.
-- `Icon/AppIcon.icon` the app icon, an Icon Composer file (JSON plus SVG layers). `build.sh` compiles it with `tools/make_icon.sh`; `tools/icon_review.sh` renders every look into one PNG.
+- `Tools/generate_icon.swift` + `Tools/make_icns.sh` render the icon ("Mm", 27, deep rose) into `Resources/AppIcon.icns`.
 - `docs/` the brief, the screen index, and the user stories, when they exist.
 
 ## Build and check
