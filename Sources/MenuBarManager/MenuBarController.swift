@@ -317,7 +317,7 @@ final class MenuBarController {
             toggle.keyEquivalentModifierMask = shortcut.mask
         }
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",", target: self).showIcon("gearshape")
+        menu.addItem(withTitle: "Settings…", action: #selector(showSettingsWindow), keyEquivalent: ",", target: self).showIcon("gearshape")
         menu.addItem(withTitle: "Menu Bar Manager Help", action: #selector(openHelp), target: self).showIcon("questionmark.circle")
         if let staged = AutoUpdater.shared.staged {
             menu.addItem(withTitle: "Update to \(staged.version) Now", action: #selector(installStagedUpdate), target: self)
@@ -342,7 +342,7 @@ final class MenuBarController {
     var chevronImage: NSImage? { chevron?.button?.image }
 
     @objc private func toggleFromMenu() { toggle() }
-    @objc func openSettings() { SettingsWindow.shared.show() }
+    @objc func showSettingsWindow() { SettingsWindow.shared.show() }
     @objc private func openHelp() { HelpWindow.shared.show() }
     @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
     @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }
