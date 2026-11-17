@@ -37,6 +37,9 @@ enum ReleaseNotes {
     /// Notes shipped inside the app, newest first. Add one for every version, so About shows
     /// it even before its GitHub release exists.
     static let bundled: [Entry] = [
+        Entry(version: "1.0.3", notes: """
+        - Shown apps no longer disappear while another display is connected. On a MacBook on its own, an app steps aside only when the chevron has no room right of the notch, comes back when there's room, and Settings › Items marks it.
+        """),
         Entry(version: "1.0.2", notes: """
         - Settings opens on General, now the first tab.
         """),
