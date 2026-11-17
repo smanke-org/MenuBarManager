@@ -73,10 +73,11 @@ Status: done
 ## M5 System and polish
 
 ### S-013 Standard app set
-As the user, I get the same standard features as my other apps: Show in Dock and Show in menu bar checkboxes (the chevron stays either way), the appearance switch, Help, About, the updater, Settings that scrolls and can be resized, a login item, and the ToolHUD menu hub.
+As the user, I get the same standard features as my other apps: Show in Dock (the chevron always stays; its right-click menu is the app's menu, so there is no Show in menu bar checkbox), the appearance switch, Help, About, the updater, settings sync, Settings that scrolls and can be resized, a login item, Ask before quitting, the ToolHUD menu hub, and menubarmanager:// URLs (toggle, show, hide, settings).
 Acceptance:
 - [manual] Each one works as it does in SnagAnything.
-Status: todo
+- [self] Help pages for every Settings pane, synced keys, About notes for this version, the URL scheme.
+Status: doing (built and installed 2026-11-17; not yet tried by hand)
 
 ### S-014 CLI and MCP
 As the user, I run `menubarmanager list`, `show`, `hide` and `move <item> <section>`, or use the same commands over MCP.
