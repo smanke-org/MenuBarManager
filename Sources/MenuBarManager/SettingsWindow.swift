@@ -54,7 +54,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 }
 
 /// One toolbar item per pane. Each pane lives in its own file (ItemsSettings.swift,
-/// GeneralSettings.swift, UI/AppearanceSettings.swift).
+/// GeneralSettings.swift).
 @MainActor
 final class SettingsTabs: NSTabViewController {
     init(launchAtLogin: LaunchAtLogin) {
@@ -65,7 +65,6 @@ final class SettingsTabs: NSTabViewController {
         transitionOptions = [.crossfade, .allowUserInteraction]
         add("Items", "menubar.rectangle", Form { ItemsSettings() }.formStyle(.grouped))
         add("General", "gearshape", GeneralSettings(launchAtLogin: launchAtLogin))
-        add("Appearance", "paintpalette", Form { AppearanceSettings() }.formStyle(.grouped))
     }
 
     required init?(coder: NSCoder) { fatalError() }

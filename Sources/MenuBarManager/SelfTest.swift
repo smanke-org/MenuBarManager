@@ -27,7 +27,7 @@ enum SelfTest {
                   "running \(AppInfo.version)")
             check("Help shows the real shortcut", !Help.resolve("{shortcut}").contains("{"))
             let topics = Set(Help.topics.map(\.id))
-            for tab in ["Items", "General", "Appearance"] {
+            for tab in ["Items", "General"] {
                 check("Settings › \(tab)'s ? button has a Help page", topics.contains(Help.topic(forSettingsTab: tab)))
             }
             for key in [AppSettings.Key.sections, AppSettings.Key.autoCollapseDelay, AppSettings.Key.showOnHover,
