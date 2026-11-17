@@ -11,8 +11,8 @@ import AppKit
 final class MenuBarController {
     static let shared = MenuBarController()
 
-    static let hiddenLength: CGFloat = 10_000
-    static let dividerLength: CGFloat = 0
+    static let hiddenLength: CGFloat = CGFloat(Double(ProcessInfo.processInfo.environment["APP_HIDDEN_LENGTH"] ?? "") ?? 10_000)
+    static let dividerLength: CGFloat = 1
 
     private(set) var isExpanded = false
     private(set) var showsAlwaysHidden = false
@@ -46,15 +46,31 @@ final class MenuBarController {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        divider = bar.statusItem(withLength: Self.hiddenLength)
+        divider = bar.statusItem(withLength: NSStatusItem.variableLength)
+        divider.button?.setAccessibilityLabel("Menu Bar Manager divider")
         divider.autosaveName = "MenuBarManager.divider"
         divider.behavior = []
 
-        alwaysDivider = bar.statusItem(withLength: Self.hiddenLength)
+        alwaysDivider = bar.statusItem(withLength: NSStatusItem.variableLength)
+        alwaysDivider.button?.setAccessibilityLabel("Menu Bar Manager Always Hidden divider")
         alwaysDivider.autosaveName = "MenuBarManager.alwaysDivider"
         alwaysDivider.behavior = []
 
+        // macOS 27 drops an item that is too wide to fit when it is first placed,
+        // so the dividers start narrow and grow once they have a place in the bar.
+        isExpanded = true
+        showsAlwaysHidden = true
         apply()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [self] in collapse() }
+
+        if let path = ProcessInfo.processInfo.environment["APP_DEBUG_DUMP"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [self] in
+                let lines = [("chevron", chevron), ("divider", divider), ("always", alwaysDivider)].map { name, item in
+                    "\(name) visible=\(item.isVisible) length=\(item.length) frame=\(item.button?.window?.frame ?? .zero)"
+                }
+                try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+            }
+        }
     }
 
     // MARK: Showing and hiding
@@ -89,14 +105,20 @@ final class MenuBarController {
     }
 
     private func apply() {
-        divider.length = isExpanded ? Self.dividerLength : Self.hiddenLength
-        alwaysDivider.length = showsAlwaysHidden ? Self.dividerLength : Self.hiddenLength
+        // macOS 27 never places fixed-length items, or items with nothing drawn in
+        // them, so each divider is a variable-length item showing a blank image.
+        Self.setWidth(isExpanded ? Self.dividerLength : Self.hiddenLength, of: divider)
+        Self.setWidth(showsAlwaysHidden ? Self.dividerLength : Self.hiddenLength, of: alwaysDivider)
         guard let button = chevron.button else { return }
         let name = isExpanded ? "chevron.right" : "chevron.left"
         let image = NSImage(systemSymbolName: name, accessibilityDescription: isExpanded ? "Hide items" : "Show hidden items")
         image?.isTemplate = true
         button.image = image?.withSymbolConfiguration(.init(pointSize: 12, weight: .semibold))
         button.toolTip = isExpanded ? "Hide items" : "Show hidden items\nOption-click to show Always Hidden items too"
+    }
+
+    private static func setWidth(_ width: CGFloat, of item: NSStatusItem) {
+        item.button?.image = NSImage(size: NSSize(width: width, height: 16), flipped: false) { _ in true }
     }
 
     // MARK: Collapsing on its own
