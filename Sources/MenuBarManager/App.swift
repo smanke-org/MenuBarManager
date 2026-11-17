@@ -67,13 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A menu bar app: no Dock icon by default, no window at launch.
         NSApp.setActivationPolicy(.accessory)
         MenuBarController.shared.install()
-        if let path = ProcessInfo.processInfo.environment["APP_DEBUG_CC_DUMP"] { ControlCenterList.dump(to: path) }
-        if let spec = ProcessInfo.processInfo.environment["APP_DEBUG_SET_ALLOWED"] {   // "bundle.id=0"
-            let parts = spec.split(separator: "=")
-            let ok = ControlCenterList.setAllowed(parts.last == "1", bundleID: String(parts.first ?? ""))
-            NSLog("Menu Bar Manager: setAllowed \(spec) -> \(ok)")
-        }
-        // Reading other apps' menu bar items and moving them needs Accessibility.
+        // Listing other apps' menu bar items in Settings needs Accessibility.
         if !AXIsProcessTrusted() {
             AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
         }

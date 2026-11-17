@@ -10,17 +10,17 @@ Bartender and Thaw, which misbehave on recent macOS releases. The worst problem:
 ## Main jobs
 1. Click the chevron to show or hide the Hidden section. It collapses again on a click elsewhere or after a timer.
 2. Arrange items in Settings by dragging them between **Shown**, **Hidden** and **Always Hidden**.
-3. Keep items where they belong. Each item's section is remembered by its app and name. When an item drifts (its app relaunches, it changes width, macOS moves it), it is moved back automatically.
+3. Keep items where they belong. Sections are per app, not per position, so an app in Shown is never hidden, however macOS places its items.
 
 ## Data
-- MenuBarItem: owning bundle id, item title/identifier, section (shown / hidden / alwaysHidden), order within its section
+- App section: bundle id → shown / hidden / alwaysHidden (macOS 27 hides by app, so all of an app's items share a section)
 - Settings: auto-collapse delay, global shortcut, reveal on hover, reveal on scroll, show drop-down bar (auto / always / never)
 
 ## Shape
-A menu bar app with two items of its own: the chevron and an invisible divider that hides items by growing very wide. A second divider marks off Always Hidden. Items are never captured as images, so iStat and other live items draw themselves. On a notched MacBook, or when the Hidden items don't fit on a display, they appear in a drop-down bar under the menu bar instead. Works on every display. macOS 26 or later. Local data. Works offline. No accounts.
+A menu bar app with one item of its own, the chevron. Hiding uses MenuBarAgent's own allow-list mode (a private MenuBarClientCore assertion), held by a helper process: instant, and dropped by macOS if the app quits or crashes. The old wide-divider trick does nothing on macOS 27. Runs from /Applications (the chevron hides itself otherwise). macOS 27 or later. Local data. Works offline. No accounts.
 
 ## System hooks
-Global shortcut (with the shortcut editor), Accessibility for reading item positions and moving items with simulated ⌘-drags, login item, `menubarmanager` CLI and MCP, ToolHUD menu hub, ShortcutsLens hotkey report. Standard set: Show in Dock and Show in menu bar checkboxes, appearance switch, Help, About, updater, Settings that scrolls and can be resized.
+Global shortcut (with the shortcut editor), Accessibility for listing menu bar items in Settings, login item, `menubarmanager` CLI and MCP, ToolHUD menu hub, ShortcutsLens hotkey report. Standard set: Show in Dock and Show in menu bar checkboxes, appearance switch, Help, About, updater, Settings that scrolls and can be resized.
 
 ## Reference
 Bartender and Thaw, for their behavior only. Never named in the repo.

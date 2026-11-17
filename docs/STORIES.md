@@ -2,81 +2,45 @@
 
 ## M1 Core loop: hide and show
 
-### S-001 Chevron and divider appear at launch
-As the user, I launch the app and see a chevron in the menu bar, with an invisible divider to its left.
-Screens: menubar-collapsed, menubar-expanded
+### S-001 Chevron in the menu bar
+As the user, I launch the app and see a chevron in the menu bar.
 Acceptance:
-- [manual] The chevron appears to the left of the Shown items.
-- [self] The divider item exists and sits left of the chevron (checked with CGWindowList).
-- [unit] The positions of both items are saved and restored after a relaunch.
-UX:
-- The chevron points left when collapsed and right when expanded. Hover help: "Show hidden items" or "Hide items".
-Status: todo
+- [manual] The chevron stays visible while apps are hidden (app runs from /Applications).
+Status: done
 
 ### S-002 Click the chevron to show and hide
-As the user, I click the chevron to show the Hidden items, and click it again to hide them.
-Depends: S-001
+As the user, I click the chevron to show the Hidden apps' items, and click it again to hide them.
 Acceptance:
-- [self] When collapsed, the divider is 10,000 pt wide and every item to its left is off screen.
-- [self] When expanded, the divider is 0 pt wide and the Hidden items are on screen.
-- [manual] iStat Menus draws live values in both states, with no copied or frozen images.
-Status: todo
+- [manual] The change is instant, with no blink; Apple's items never move.
+- [manual] Option-click also shows Always Hidden apps.
+Status: done
 
 ### S-003 Collapse automatically
-As the user, I click anywhere else, or wait out the delay I chose, and the Hidden items hide again.
-Depends: S-002
+As the user, I wait out the delay I chose and the Hidden items hide again.
 Acceptance:
-- [unit] The timer collapses after the delay (default 10 s, 0 = never).
-- [self] The bar doesn't collapse while one of its items has its menu open.
-Status: todo
+- [manual] Default 30 s, set in Settings › General; it waits while a menu is open.
+Status: done
 
-### S-004 See every item in Settings
-As the user, I open Settings › Items and see every menu bar item, with its icon and app name, grouped into Shown, Hidden and Always Hidden.
+### S-004 Choose each app's section
+As the user, I open Settings › Items and pick Shown, Hidden or Always Hidden for each app with menu bar items.
 Screens: settings-items
-Depends: S-001
 Acceptance:
-- [unit] Items come from CGWindowList (layer 25), each matched to the app that owns it.
-- [snap] Three labeled groups, each row showing the item's icon and app name.
-- [manual] The first time, the app asks for Accessibility (shown as "Device Control and Data Access" on macOS 27) with an explanation and a button that opens System Settings.
-UX:
-- Section names are "Shown", "Hidden" and "Always Hidden" everywhere.
-Status: todo
+- [manual] Every app with menu bar items is listed with its icon and name; the choice applies at once.
+- [manual] Without Accessibility, the page explains why and opens the right Settings pane.
+Status: doing
 
-### S-005 Drag an item to another section
-As the user, I drag an item in Settings › Items into another section, and it moves in the real menu bar.
-Depends: S-004
+### S-005 Nothing stays hidden by accident
 Acceptance:
-- [self] The item is moved with a simulated ⌘-drag, and its new position is checked afterward.
-- [manual] If the move fails, the row shows "Couldn't move" with a Try Again button.
-- [unit] The chosen section is saved under the item's identity (bundle id + title).
-Status: todo
-
-### S-006 Always Hidden section
-As the user, I put items in Always Hidden so they stay out of the menu bar even when it's expanded.
-Depends: S-005
-Acceptance:
-- [self] A second divider stays 10,000 pt wide at all times.
-- [manual] Option-clicking the chevron shows the Always Hidden items too.
-Status: todo
+- [manual] Quitting or force-quitting the app brings every item back (verified 2026-11-17).
+- [manual] An app launched while collapsed is added to the allow-list, so Shown apps stay visible.
+Status: done
 
 ## M2 Keep items in place
 
-### S-007 Move drifted items back
-As the user, I see iStat Menus stay in Shown after I relaunch it or its width changes.
-Depends: S-005
+### S-007 iStat stays in Shown
 Acceptance:
-- [unit] A position check runs on app launch/quit notifications and every 5 seconds. It compares each item's section with the saved section.
-- [self] A drifted item is moved back within 2 seconds, then checked.
-- [unit] An item that keeps drifting is retried 3 times, then flagged in Settings, not moved forever.
-- [manual] Relaunch iStat Menus 5 times: it ends up in Shown every time.
-Status: todo
-
-### S-008 Put new items in a default section
-As the user, I choose whether items that appear for the first time go into Shown or Hidden.
-Depends: S-007
-Acceptance:
-- [unit] An item without a saved section gets the default section and is moved there once.
-Status: todo
+- [manual] Sections are per app, so iStat in Shown is never hidden; its stale far-left saved positions were rewritten 2026-11-17.
+Status: done
 
 ## M3 Displays and the notch
 
@@ -131,6 +95,8 @@ Acceptance:
 Status: todo
 
 ## Dropped
+- Dividers and per-item sections: macOS 27 ignores the wide-divider trick and hides only by app.
+- Moving items with ⌘-drags to restore drifted ones: not needed when sections are per app.
 - Accounts, sync, analytics: single user.
 - Capturing item images to redraw them: the cause of the problems with live items like iStat.
 
