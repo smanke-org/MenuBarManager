@@ -25,13 +25,24 @@ final class AppHider {
     private static let sectionsKey = "appSections"
     private let restriction = BarRestriction()
     private var launchObserver: NSObjectProtocol?
+    private var quitObserver: NSObjectProtocol?
     private var lastState = (expanded: false, includingAlwaysHidden: false)
     /// Shown apps taken off the bar while the hidden ones are out on a notched
     /// screen, so the hidden ones have room right of the notch.
     var swappedOut: Set<String> = []
-    /// Shown apps stepping aside so the chevron fits on a notched screen. Rebuilt
-    /// each launch; they come back when the hidden items are shown.
+    /// Shown apps stepping aside so the chevron fits when the Mac's only screen has a
+    /// notch. Never used with another display connected; cleared whenever there may be
+    /// room again (a screen or section change, an app quitting), then rebuilt as needed.
+    /// Settings › Items marks these apps.
     var setAside: Set<String> = []
+
+    /// Brings every set-aside app back. MenuBarController sets one aside again if the
+    /// chevron still doesn't fit.
+    func releaseSetAside() {
+        guard !setAside.isEmpty else { return }
+        setAside = []
+        reapply()
+    }
     /// Where each app's leftmost item was last drawn, for listing apps in bar order
     /// even while they're hidden.
     private(set) var lastSeenX: [String: CGFloat] = [:]
@@ -50,6 +61,11 @@ final class AppHider {
         launchObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.reapply() }
+        }
+        // An app quitting frees room on the bar.
+        quitObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.releaseSetAside() }
         }
     }
 
@@ -75,6 +91,8 @@ final class AppHider {
     func setSection(_ section: MenuSection, for bundleID: String) {
         adopted.remove(bundleID)
         sections[bundleID] = section
+        // A different set of Shown apps needs a fresh look at what fits.
+        setAside = []
         defaults.set(sections.mapValues(\.rawValue), forKey: Self.sectionsKey)
         reapply()
     }

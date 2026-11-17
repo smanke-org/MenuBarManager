@@ -190,24 +190,33 @@ final class MenuBarController {
 
     // MARK: Room for the chevron
 
-    /// On a screen with a notch the chevron can end up behind macOS's overflow. When
-    /// that happens (collapsed, bar settled), the narrowest Shown app with a single
-    /// item steps aside, on every screen, until the chevron fits. Apps with several
-    /// items, like iStat Menus, are never picked.
+    /// On a MacBook with no other display the chevron can end up behind the notch or
+    /// macOS's overflow. When that happens (collapsed, bar settled), the narrowest Shown
+    /// app with a single item steps aside until the chevron fits; Settings › Items marks
+    /// it. Apps with several items, like iStat Menus, are never picked.
     private func keepRoomForChevron() {
         guard !isExpanded, Date().timeIntervalSince(lastChange) > 3 else { return }
+        // Only when the Mac's one screen has a notch (a MacBook on its own). With another
+        // display connected the chevron is reachable there, and setting an app aside would
+        // hide it on every screen.
+        let screens = NSScreen.screens
+        guard !screens.isEmpty, screens.allSatisfy({ $0.safeAreaInsets.top > 0 }) else {
+            AppHider.shared.releaseSetAside()
+            return
+        }
         let me = Bundle.main.bundleIdentifier
         let drawn = MenuBarItems.drawn()
-        let notched = NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }
-        let missing = notched.contains { screen in
+        // The chevron counts only when it's drawn right of the notch, not behind it.
+        let missing = screens.contains { screen in
             let x = screen.frame.minX...screen.frame.maxX
             let onScreen = drawn.filter { x ~= $0.frame.midX }
-            return !onScreen.isEmpty && !onScreen.contains { $0.bundleID == me }
+            let visibleFrom = screen.auxiliaryTopRightArea?.minX ?? screen.frame.minX
+            return !onScreen.isEmpty && !onScreen.contains { $0.bundleID == me && $0.frame.minX >= visibleFrom }
         }
         guard missing else { return }
         let hider = AppHider.shared
         var widths: [String: (count: Int, width: CGFloat)] = [:]
-        let main = NSScreen.screens.first { $0.safeAreaInsets.top == 0 } ?? NSScreen.screens[0]
+        let main = screens[0]
         for item in drawn where main.frame.minX...main.frame.maxX ~= item.frame.midX {
             guard let id = item.bundleID, id != me, !id.hasPrefix("com.apple."),
                   hider.section(for: id) == .shown, !hider.setAside.contains(id) else { continue }

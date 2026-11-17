@@ -64,6 +64,9 @@ struct ItemsSettings: View {
         } label: {
             Label {
                 Text(app.name)
+                if section == .shown, hider.setAside.contains(app.bundleID) {
+                    Text("Set aside: no room next to the notch. It comes back when there's room or another display is connected.")
+                }
             } icon: {
                 if let icon = app.icon { Image(nsImage: icon).resizable().frame(width: 16, height: 16) }
             }
