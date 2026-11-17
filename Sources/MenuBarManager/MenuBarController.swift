@@ -219,11 +219,13 @@ final class MenuBarController {
 
     /// On a screen with a notch there's rarely room for the hidden items, so while
     /// they're out, the Shown apps step aside (Settings › General, on by default).
-    /// While the hidden items are out, the Shown apps step aside on every screen, so
-    /// the bar behaves the same everywhere and a notch never crowds the hidden items
-    /// out (Settings › General, off by default).
     private func shouldSwap() -> Bool {
-        UserDefaults.standard.bool(forKey: "swapOnNotch")
+        // Only when shown from a screen with a notch (the pointer's screen); on other
+        // screens the hidden items simply join the bar.
+        guard UserDefaults.standard.object(forKey: "swapOnNotch") as? Bool ?? true else { return false }
+        let point = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+        return (screen?.safeAreaInsets.top ?? 0) > 0
     }
 
     private func shownAppsOnBar() -> Set<String> {
