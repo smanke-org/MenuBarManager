@@ -37,7 +37,7 @@ enum ReleaseNotes {
     /// Notes shipped inside the app, newest first. Add one for every version, so About shows
     /// it even before its GitHub release exists.
     static let bundled: [Entry] = [
-        Entry(version: "0.1.0", notes: """
+        Entry(version: "1.0.0", notes: """
         - First version: a chevron in the menu bar shows and hides the menu bar items of the apps you choose.
         - Three sections per app, Shown, Hidden and Always Hidden, picked in Settings › Items or by ⌘-dragging items across the chevron.
         - On a screen with a notch, Shown items step aside while the Hidden ones are out.
