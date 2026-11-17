@@ -60,7 +60,7 @@ struct GeneralSettings: View {
     @AppStorage("autoCollapseDelay") private var delay = 30.0
     @AppStorage("showOnHover") private var showOnHover = false
     @AppStorage("showOnScroll") private var showOnScroll = false
-    @AppStorage("swapOnNotch") private var swapOnNotch = true
+    @AppStorage("swapOnNotch") private var swapOnNotch = false
     @State private var hotKey = HotKeyCenter.shared.hotKey(for: .toggle)
 
     var body: some View {

@@ -32,6 +32,15 @@ final class AppHider {
     /// Shown apps stepping aside so the chevron fits on a notched screen. Rebuilt
     /// each launch; they come back when the hidden items are shown.
     var setAside: Set<String> = []
+    /// Where each app's leftmost item was last drawn, for listing apps in bar order
+    /// even while they're hidden.
+    private(set) var lastSeenX: [String: CGFloat] = [:]
+
+    func noteDrawn(_ items: [DrawnItem]) {
+        var seen: [String: CGFloat] = [:]
+        for item in items { if let id = item.bundleID { seen[id] = min(seen[id] ?? .infinity, item.frame.minX) } }
+        lastSeenX.merge(seen) { _, new in new }
+    }
 
     private init() {
         let raw = defaults.dictionary(forKey: Self.sectionsKey) as? [String: String] ?? [:]

@@ -73,6 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         HotKeyCenter.shared.apply()
+        // Test hook: APP_TEST_MOVE=<bundle id>=<shown|hidden|alwaysHidden>
+        if let spec = ProcessInfo.processInfo.environment["APP_TEST_MOVE"],
+           let eq = spec.lastIndex(of: "="), let section = MenuSection(rawValue: String(spec[spec.index(after: eq)...])) {
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                await MenuBarController.shared.move(String(spec[..<eq]), to: section)
+            }
+        }
         ShortcutsLensReport.start({ HotKeyCenter.shared.reportedShortcuts }) { id, keyCode, modifiers in
             HotKeyCenter.shared.change(id: id, keyCode: UInt32(keyCode), carbonModifiers: UInt32(modifiers))
         }

@@ -50,7 +50,10 @@ final class MenuBarController {
     /// already in the section their side implies.
     private func checkOrder() {
         keepRoomForChevron()
-        let order = MenuBarItems.drawn().compactMap(\.bundleID)
+        let drawn = MenuBarItems.drawn()
+        let plain = NSScreen.screens.first { $0.safeAreaInsets.top == 0 } ?? NSScreen.screens[0]
+        AppHider.shared.noteDrawn(drawn.filter { plain.frame.minX...plain.frame.maxX ~= $0.frame.midX })
+        let order = drawn.compactMap(\.bundleID)
         guard order != lastOrder else { return }
         let first = lastOrder.isEmpty
         lastOrder = order
@@ -162,6 +165,24 @@ final class MenuBarController {
         scheduleCollapse()
     }
 
+    // MARK: Moving from Settings
+
+    /// Puts an app in a section. Shown and Hidden are places in the bar, so the app's
+    /// items are ⌘-dragged across the chevron; Always Hidden is set directly.
+    func move(_ bundleID: String, to section: MenuSection) async {
+        let hider = AppHider.shared
+        guard section != .alwaysHidden else { hider.setSection(.alwaysHidden, for: bundleID); return }
+        let wasExpanded = isExpanded
+        // The item has to be on the bar to be dragged.
+        if hider.section(for: bundleID) == .alwaysHidden { hider.setSection(.hidden, for: bundleID) }
+        if !isExpanded { expand() }
+        try? await Task.sleep(for: .milliseconds(700))
+        _ = await ItemMover.move(bundleID, toShown: section == .shown)
+        lastChange = .distantPast
+        syncSectionsFromPositions()
+        if !wasExpanded { collapse() }
+    }
+
     // MARK: Room for the chevron
 
     /// On a screen with a notch the chevron can end up behind macOS's overflow. When
@@ -200,9 +221,9 @@ final class MenuBarController {
     /// they're out, the Shown apps step aside (Settings › General, on by default).
     /// While the hidden items are out, the Shown apps step aside on every screen, so
     /// the bar behaves the same everywhere and a notch never crowds the hidden items
-    /// out (Settings › General, on by default).
+    /// out (Settings › General, off by default).
     private func shouldSwap() -> Bool {
-        UserDefaults.standard.object(forKey: "swapOnNotch") as? Bool ?? true
+        UserDefaults.standard.bool(forKey: "swapOnNotch")
     }
 
     private func shownAppsOnBar() -> Set<String> {
