@@ -65,9 +65,8 @@ final class AppHider {
     }
 
     private func reapply() {
-        let apps = appsToHide(expanded: lastState.expanded, includingAlwaysHidden: lastState.includingAlwaysHidden)
-        restriction.release()
-        restriction.hide(apps)
+        restriction.hide(appsToHide(expanded: lastState.expanded, includingAlwaysHidden: lastState.includingAlwaysHidden))
+        restriction.refresh()
     }
 
     /// Everything back on the bar. Called at quit; a crash does the same on its own.

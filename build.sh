@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Builds MenuBarManager and installs it to ~/Applications/MenuBarManager.app.
+# Builds MenuBarManager and installs it to /Applications (macOS 27 only lets the chevron survive hiding when the app runs from there)/MenuBarManager.app.
 # Build products live in ~/Library/Developer/MenuBarManager, outside the repo
 # (and outside Dropbox or iCloud, which would try to sync them).
 #
@@ -17,7 +17,7 @@ config=release
 # Settings > Accounts). Otherwise sign ad hoc, which is fine for your own Mac.
 identity="${SIGN_IDENTITY:-}"
 if [[ -z "$identity" ]]; then
-  identity=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 -o '"Apple Development: [^"]*"' | tr -d '"' || true)
+  identity=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 -o '"Developer ID Application: [^"]*"' | tr -d '"' || true)
 fi
 [[ -n "$identity" ]] || identity=-
 
@@ -32,11 +32,13 @@ if [[ -n "$stale" ]]; then
   exit 1
 fi
 
-app="$HOME/Applications/$name.app"
-mkdir -p "$HOME/Applications"
+app="/Applications/$name.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$name"
+# The hiding helper must not count as the app, or its menu bar item hides too (BarRestriction.swift).
+mkdir -p "$app/Contents/Helpers"
+cp "$bin" "$app/Contents/Helpers/MenuBarManagerHider"
 sed -e "s/__BUILD__/$(date +%Y%m%d%H%M)/" "$here/Info.plist.in" > "$app/Contents/Info.plist"
 # The icon: Icon/AppIcon.icon -> Resources/Assets.car + AppIcon.icns, rebuilt when it changed.
 if [[ -d "$here/Icon/AppIcon.icon" ]]; then
@@ -47,6 +49,7 @@ if [[ -d "$here/Icon/AppIcon.icon" ]]; then
   cp -X "$car" "$here/Resources/AppIcon.icns" "$app/Contents/Resources/"
 fi
 xattr -cr "$app"
+codesign --force --sign "$identity" "$app/Contents/Helpers/MenuBarManagerHider" 2>&1 | grep -v "replacing existing signature" || true
 codesign --force --sign "$identity" "$app" 2>&1 | grep -v "replacing existing signature" || true
 echo "installed $app (signed: ${identity})"
 

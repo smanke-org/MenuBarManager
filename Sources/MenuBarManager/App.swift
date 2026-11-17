@@ -12,6 +12,17 @@ import SwiftUI
 //   APP_GRID=1 MenuBarManager           draw the 8 pt grid and the layout probes over the window
 
 @main
+enum Entry {
+    static func main() {
+        // The same binary doubles as the hiding helper (see BarRestriction).
+        if CommandLine.arguments.contains(BarRestriction.helperFlag) {
+            BarRestriction.runHelper()
+        } else {
+            MenuBarManagerApp.main()
+        }
+    }
+}
+
 struct MenuBarManagerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel(container: Store.makeContainer())
