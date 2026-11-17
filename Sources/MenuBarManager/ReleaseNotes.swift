@@ -37,6 +37,9 @@ enum ReleaseNotes {
     /// Notes shipped inside the app, newest first. Add one for every version, so About shows
     /// it even before its GitHub release exists.
     static let bundled: [Entry] = [
+        Entry(version: "1.0.2", notes: """
+        - Settings opens on General, now the first tab.
+        """),
         Entry(version: "1.0.1", notes: """
         - Settings… in the chevron's menu shows one icon instead of two.
         """),
