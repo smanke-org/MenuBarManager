@@ -104,3 +104,10 @@ Status: todo
 - Per-item spacing, tint and icons.
 - Rules that show items based on conditions.
 - Searching menu bar items.
+
+### S-016 ⌘-drag across the chevron
+As the user, I ⌘-drag an item left of the chevron to hide its app, or right of it to show it.
+Acceptance:
+- [manual] Sections follow MenuBarAgent's drawn positions (apps' own AX frames go stale on macOS 27).
+- [manual] An app with any item right of the chevron stays Shown.
+Status: done
