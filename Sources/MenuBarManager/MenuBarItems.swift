@@ -52,18 +52,59 @@ enum MenuBarItems {
 
     // MARK: AX helpers
 
-    private static func attribute<T>(_ element: AXUIElement, _ name: String) -> T? {
+    fileprivate static func attribute<T>(_ element: AXUIElement, _ name: String) -> T? {
         var value: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success else { return nil }
         return value as? T
     }
 
-    private static func frame(of element: AXUIElement) -> CGRect? {
+    fileprivate static func frame(of element: AXUIElement) -> CGRect? {
         guard let position: AXValue = attribute(element, kAXPositionAttribute),
               let size: AXValue = attribute(element, kAXSizeAttribute) else { return nil }
         var point = CGPoint.zero, extent = CGSize.zero
         AXValueGetValue(position, .cgPoint, &point)
         AXValueGetValue(size, .cgSize, &extent)
         return CGRect(origin: point, size: extent)
+    }
+}
+
+/// An item as MenuBarAgent actually draws it.
+struct DrawnItem {
+    let pid: pid_t
+    let bundleID: String?
+    /// Global, top-left origin (Accessibility coordinates).
+    let frame: CGRect
+}
+
+extension MenuBarItems {
+    /// What is really on the bar right now, read from MenuBarAgent's own windows (one
+    /// per display). On macOS 27 an app's AXExtrasMenuBar positions go stale after a
+    /// ⌘-drag; these don't. Hidden items aren't drawn, so they aren't listed.
+    static func drawn() -> [DrawnItem] {
+        var result: [DrawnItem] = []
+        for agent in NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.MenuBarAgent") {
+            let agentPID = agent.processIdentifier
+            let element = AXUIElementCreateApplication(agentPID)
+            guard let windows: [AXUIElement] = attribute(element, kAXWindowsAttribute) else { continue }
+            for window in windows {
+                for child in (attribute(window, kAXChildrenAttribute) as [AXUIElement]?) ?? [] {
+                    guard let frame = frame(of: child), let pid = owner(of: child, agentPID: agentPID, depth: 0) else { continue }
+                    result.append(DrawnItem(pid: pid, bundleID: NSRunningApplication(processIdentifier: pid)?.bundleIdentifier, frame: frame))
+                }
+            }
+        }
+        return result.sorted { $0.frame.minX < $1.frame.minX }
+    }
+
+    /// The first element inside an agent-hosted item that belongs to another process.
+    private static func owner(of element: AXUIElement, agentPID: pid_t, depth: Int) -> pid_t? {
+        var pid: pid_t = 0
+        AXUIElementGetPid(element, &pid)
+        if pid != agentPID { return pid }
+        guard depth < 4 else { return nil }
+        for child in (attribute(element, kAXChildrenAttribute) as [AXUIElement]?) ?? [] {
+            if let found = owner(of: child, agentPID: agentPID, depth: depth + 1) { return found }
+        }
+        return nil
     }
 }

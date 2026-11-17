@@ -51,7 +51,7 @@ final class MenuBarController {
             let type = event.type, deltaY = event.scrollingDeltaY, command = event.modifierFlags.contains(.command)
             MainActor.assumeIsolated {
                 if type == .leftMouseUp {
-                    if command { self?.commandDragEnded() }
+                    _ = command; self?.commandDragEnded()   // ⌘ may already be up when the button is
                 } else {
                     self?.pointerEvent(type, deltaY: deltaY)
                 }
@@ -96,27 +96,25 @@ final class MenuBarController {
     }
 
     func syncSectionsFromPositions() {
-        guard let chevronFrame = chevron.button?.window?.frame else { return }
         let me = Bundle.main.bundleIdentifier
-        // Only items on the chevron's display; other displays draw their own copy of the bar.
-        let screenX = (NSScreen.screens.first { $0.frame.minX...$0.frame.maxX ~= chevronFrame.midX } ?? NSScreen.main)
-            .map { $0.frame.minX...$0.frame.maxX } ?? chevronFrame.minX...chevronFrame.maxX
-        let items = MenuBarItems.all().filter {
-            guard let id = $0.bundleID, id != me, !id.hasPrefix("com.apple.") else { return false }
-            return $0.frame.minY < 40 && screenX ~= $0.frame.midX
-        }
-        var rightOfChevron: [String: Bool] = [:]
-        for item in items {
-            guard let id = item.bundleID, item.frame.width > 0 else { continue }
-            let right = item.frame.midX > chevronFrame.midX
-            rightOfChevron[id] = (rightOfChevron[id] ?? false) || right
-        }
-        let hider = AppHider.shared
-        for (id, right) in rightOfChevron {
-            let current = hider.section(for: id)
-            guard current != .alwaysHidden else { continue }
-            let wanted: MenuSection = right ? .shown : .hidden
-            if wanted != current { hider.setSection(wanted, for: id) }
+        let drawn = MenuBarItems.drawn()
+        // The chevron as drawn; each display has its own copy of the bar, so compare
+        // within the display the chevron's copy is on.
+        for chevronItem in drawn where chevronItem.bundleID == me {
+            let row = drawn.filter { abs($0.frame.minY - chevronItem.frame.minY) < 8 && abs($0.frame.minX - chevronItem.frame.minX) < 4000 }
+            var rightOfChevron: [String: Bool] = [:]
+            for item in row {
+                guard let id = item.bundleID, id != me, !id.hasPrefix("com.apple.") else { continue }
+                rightOfChevron[id] = (rightOfChevron[id] ?? false) || item.frame.midX > chevronItem.frame.midX
+            }
+            let hider = AppHider.shared
+            for (id, right) in rightOfChevron {
+                let current = hider.section(for: id)
+                guard current != .alwaysHidden else { continue }
+                let wanted: MenuSection = right ? .shown : .hidden
+                if wanted != current { hider.setSection(wanted, for: id) }
+            }
+            return    // the first copy decides; the bars share one order
         }
     }
 
