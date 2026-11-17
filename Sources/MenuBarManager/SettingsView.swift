@@ -60,6 +60,7 @@ struct GeneralSettings: View {
     @AppStorage("autoCollapseDelay") private var delay = 30.0
     @AppStorage("showOnHover") private var showOnHover = false
     @AppStorage("showOnScroll") private var showOnScroll = false
+    @AppStorage("swapOnNotch") private var swapOnNotch = true
     @State private var hotKey = HotKeyCenter.shared.hotKey(for: .toggle)
 
     var body: some View {
@@ -73,6 +74,7 @@ struct GeneralSettings: View {
             }
             Toggle("Show when the pointer rests on the chevron", isOn: $showOnHover)
             Toggle("Show or hide by scrolling over the menu bar", isOn: $showOnScroll)
+            Toggle("On screens with a notch, make room by hiding Shown items while hidden ones are out", isOn: $swapOnNotch)
             Picker("Hide again after", selection: $delay) {
                 Text("15 seconds").tag(15.0)
                 Text("30 seconds").tag(30.0)

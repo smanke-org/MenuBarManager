@@ -113,7 +113,13 @@ final class MenuBarController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.syncSectionsFromPositions() }
     }
 
+    /// When the bar last changed because of us; positions are unreliable for a while after.
+    private var lastChange = Date.distantPast
+
     func syncSectionsFromPositions() {
+        // While apps are swapped out, or while the bar is still settling after a show
+        // or hide, items sit in places that say nothing about their sections.
+        guard AppHider.shared.swappedOut.isEmpty, Date().timeIntervalSince(lastChange) > 3 else { return }
         let me = Bundle.main.bundleIdentifier
         let drawn = MenuBarItems.drawn()
         // The chevron as drawn; each display has its own copy of the bar, so compare
@@ -148,14 +154,37 @@ final class MenuBarController {
     func expand(includingAlwaysHidden: Bool = false) {
         isExpanded = true
         showsAlwaysHidden = includingAlwaysHidden
+        lastChange = Date()
+        AppHider.shared.swappedOut = shouldSwap() ? shownAppsOnBar() : []
         AppHider.shared.apply(expanded: true, includingAlwaysHidden: includingAlwaysHidden)
         updateChevron()
         scheduleCollapse()
     }
 
+    // MARK: Swap on notched screens
+
+    /// On a screen with a notch there's rarely room for the hidden items, so while
+    /// they're out, the Shown apps step aside (Settings › General, on by default).
+    private func shouldSwap() -> Bool {
+        guard UserDefaults.standard.object(forKey: "swapOnNotch") as? Bool ?? true else { return false }
+        let point = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+        return (screen?.safeAreaInsets.top ?? 0) > 0
+    }
+
+    private func shownAppsOnBar() -> Set<String> {
+        let me = Bundle.main.bundleIdentifier
+        let hider = AppHider.shared
+        return Set(MenuBarItems.drawn().compactMap(\.bundleID).filter {
+            $0 != me && !$0.hasPrefix("com.apple.") && hider.section(for: $0) == .shown
+        })
+    }
+
     func collapse() {
         isExpanded = false
         showsAlwaysHidden = false
+        AppHider.shared.swappedOut = []
+        lastChange = Date()
         collapseTimer?.invalidate()
         AppHider.shared.apply(expanded: false, includingAlwaysHidden: false)
         updateChevron()
