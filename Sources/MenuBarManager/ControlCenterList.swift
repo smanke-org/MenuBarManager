@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 /// The list behind System Settings › Menu Bar › "Allow in the Menu Bar".
@@ -55,3 +56,4 @@ extension ControlCenterList {
         return true
     }
 }
+

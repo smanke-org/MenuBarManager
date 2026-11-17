@@ -22,7 +22,10 @@ struct MenuBarItem: Identifiable, Hashable {
 
 enum MenuBarItems {
     static func all() -> [MenuBarItem] {
-        NSWorkspace.shared.runningApplications.flatMap(items(of:)).sorted { $0.frame.minX < $1.frame.minX }
+        // Never ask our own process over AX from the main thread: it would wait on itself.
+        NSWorkspace.shared.runningApplications
+            .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
+            .flatMap(items(of:)).sorted { $0.frame.minX < $1.frame.minX }
     }
 
     static func items(of app: NSRunningApplication) -> [MenuBarItem] {
