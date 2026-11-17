@@ -36,6 +36,24 @@ final class MenuBarController {
         updateChevron()
         AppHider.shared.apply(expanded: false, includingAlwaysHidden: false)
         startWatchingPointer()
+        // ⌘-drags in the bar aren't reported to other apps, so watch the drawn order.
+        orderTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.checkOrder() }
+        }
+    }
+
+    private var orderTimer: Timer?
+    private var lastOrder: [String] = []
+
+    /// Syncs sections when the drawn order changes. Expanding or collapsing changes
+    /// the order too (items appear and vanish), which is harmless: those apps are
+    /// already in the section their side implies.
+    private func checkOrder() {
+        let order = MenuBarItems.drawn().compactMap(\.bundleID)
+        guard order != lastOrder else { return }
+        let first = lastOrder.isEmpty
+        lastOrder = order
+        if !first { syncSectionsFromPositions() }
     }
 
     // MARK: Hover and scroll
@@ -146,6 +164,7 @@ final class MenuBarController {
     func toggle() { isExpanded ? collapse() : expand() }
 
     @objc private func chevronClicked() {
+        syncSectionsFromPositions()
         let event = NSApp.currentEvent
         if event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true {
             showMenu()
