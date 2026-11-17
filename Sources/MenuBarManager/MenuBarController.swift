@@ -79,7 +79,7 @@ final class MenuBarController {
         }
     }
 
-    static let chevronIdentity = "com.smanke.menubarmanager/Show hidden items"
+    static let chevronIdentity = "com.smanke.menubarmanager/Menu Bar Manager"
     static let dividerIdentity = "com.smanke.menubarmanager/Menu Bar Manager divider"
     static let alwaysIdentity = "com.smanke.menubarmanager/Menu Bar Manager Always Hidden divider"
 
@@ -141,6 +141,8 @@ final class MenuBarController {
         let image = NSImage(systemSymbolName: name, accessibilityDescription: isExpanded ? "Hide items" : "Show hidden items")
         image?.isTemplate = true
         button.image = image?.withSymbolConfiguration(.init(pointSize: 12, weight: .semibold))
+        // A fixed name, so the chevron keeps one identity in both states.
+        button.setAccessibilityLabel("Menu Bar Manager")
         button.toolTip = isExpanded ? "Hide items" : "Show hidden items\nOption-click to show Always Hidden items too"
     }
 
