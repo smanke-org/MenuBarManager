@@ -5,7 +5,7 @@ A menu bar organizer for macOS 27 that hides the menu bar items you don't need b
 Bundle id: `com.smanke.menubarmanager`
 
 ## Replaces
-Bartender and Thaw, which misbehave on recent macOS releases. The worst problem: iStat Menus and other apps keep moving themselves into the hidden area.
+The reference menu bar organizers, which misbehave on recent macOS releases. The worst problem: iStat Menus and other apps keep moving themselves into the hidden area.
 
 ## Main jobs
 1. Click the chevron to show or hide the Hidden section. It collapses again after a delay.
@@ -23,7 +23,7 @@ A menu bar app with one item of its own, the chevron. Hiding uses MenuBarAgent's
 Global shortcut (with the shortcut editor), Accessibility for listing menu bar items in Settings, login item, `menubarmanager` CLI and MCP, ToolHUD menu hub, ShortcutsLens hotkey report. Standard set: Show in Dock and Show in menu bar checkboxes, appearance switch, Help, About, updater, Settings that scrolls and can be resized.
 
 ## Reference
-Bartender and Thaw, for their behavior only. Never named in the repo.
+The reference menu bar organizers, for their behavior only. Never named in the repo.
 
 ## Look
 Native, with the system accent color (decided by the agent).
