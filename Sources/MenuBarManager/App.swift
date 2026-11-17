@@ -67,6 +67,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A menu bar app: no Dock icon by default, no window at launch.
         NSApp.setActivationPolicy(.accessory)
         MenuBarController.shared.install()
+        HotKeyCenter.shared.perform = { action in
+            switch action {
+            case .toggle: MenuBarController.shared.toggle()
+            }
+        }
+        HotKeyCenter.shared.apply()
+        ShortcutsLensReport.start({ HotKeyCenter.shared.reportedShortcuts }) { id, keyCode, modifiers in
+            HotKeyCenter.shared.change(id: id, keyCode: UInt32(keyCode), carbonModifiers: UInt32(modifiers))
+        }
         // Listing other apps' menu bar items in Settings needs Accessibility.
         if !AXIsProcessTrusted() {
             AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)

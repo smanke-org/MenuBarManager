@@ -58,9 +58,21 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
 struct GeneralSettings: View {
     @AppStorage("autoCollapseDelay") private var delay = 30.0
+    @AppStorage("showOnHover") private var showOnHover = false
+    @AppStorage("showOnScroll") private var showOnScroll = false
+    @State private var hotKey = HotKeyCenter.shared.hotKey(for: .toggle)
 
     var body: some View {
         Section("Hidden items") {
+            LabeledContent("Show or hide with") {
+                ShortcutRecorder(hotKey: Binding(get: { hotKey }, set: { key in
+                    hotKey = key
+                    HotKeyCenter.shared.save(key, for: .toggle)
+                    HotKeyCenter.shared.apply()
+                }), action: .toggle)
+            }
+            Toggle("Show when the pointer rests on the chevron", isOn: $showOnHover)
+            Toggle("Show or hide by scrolling over the menu bar", isOn: $showOnScroll)
             Picker("Hide again after", selection: $delay) {
                 Text("15 seconds").tag(15.0)
                 Text("30 seconds").tag(30.0)

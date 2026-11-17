@@ -35,6 +35,54 @@ final class MenuBarController {
         }
         updateChevron()
         AppHider.shared.apply(expanded: false, includingAlwaysHidden: false)
+        startWatchingPointer()
+    }
+
+    // MARK: Hover and scroll
+
+    private var pointerMonitor: Any?
+    private var hoverWork: DispatchWorkItem?
+    private var lastScroll = Date.distantPast
+
+    /// Both are off by default (Settings › General). Hover waits 0.3 s on the chevron;
+    /// a scroll anywhere over the menu bar toggles (down shows, up hides).
+    private func startWatchingPointer() {
+        pointerMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .scrollWheel]) { [weak self] event in
+            let type = event.type, deltaY = event.scrollingDeltaY
+            MainActor.assumeIsolated { self?.pointerEvent(type, deltaY: deltaY) }
+        }
+    }
+
+    private func pointerEvent(_ type: NSEvent.EventType, deltaY: CGFloat) {
+        let defaults = UserDefaults.standard
+        let point = NSEvent.mouseLocation
+        if type == .scrollWheel, defaults.bool(forKey: "showOnScroll"), isInMenuBar(point), abs(deltaY) > 2,
+           Date().timeIntervalSince(lastScroll) > 0.6 {
+            lastScroll = Date()
+            if deltaY < 0, !isExpanded { expand() } else if deltaY > 0, isExpanded { collapse() }
+        }
+        if type == .mouseMoved, defaults.bool(forKey: "showOnHover"), !isExpanded {
+            let onChevron = chevron.button?.window?.frame.insetBy(dx: -2, dy: -2).contains(point) ?? false
+            if onChevron, hoverWork == nil {
+                let work = DispatchWorkItem { [weak self] in
+                    self?.hoverWork = nil
+                    guard let self, self.chevron.button?.window?.frame.contains(NSEvent.mouseLocation) == true else { return }
+                    self.expand()
+                }
+                hoverWork = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+            } else if !onChevron {
+                hoverWork?.cancel()
+                hoverWork = nil
+            }
+        }
+    }
+
+    private func isInMenuBar(_ point: NSPoint) -> Bool {
+        NSScreen.screens.contains { screen in
+            screen.frame.minX...screen.frame.maxX ~= point.x
+                && point.y >= screen.frame.maxY - NSStatusBar.system.thickness - 6
+        }
     }
 
     // MARK: Showing and hiding
