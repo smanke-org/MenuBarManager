@@ -17,7 +17,7 @@ struct MenuBarManagerApp: App {
     @State private var model = AppModel(container: Store.makeContainer())
 
     var body: some Scene {
-        Window("MenuBarManager", id: "main") {
+        Window("Menu Bar Manager", id: "main") {
             ContentView()
                 .environment(model)
                 .themed()
@@ -48,11 +48,20 @@ struct MenuBarManagerApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Started from a terminal, the process is not a foreground app yet.
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate()
+        if SelfTest.requested || ProcessInfo.processInfo.environment["APP_SNAPSHOT"] != nil {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate()
+            return
+        }
+        // A menu bar app: no Dock icon by default, no window at launch.
+        NSApp.setActivationPolicy(.accessory)
+        MenuBarController.shared.install()
+        DispatchQueue.main.async {
+            for window in NSApp.windows where window.identifier?.rawValue.hasPrefix("main") == true { window.close() }
+        }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {

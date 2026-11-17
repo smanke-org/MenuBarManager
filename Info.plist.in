@@ -3,7 +3,7 @@
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>com.smanke.menubarmanager</string>
 <key>CFBundleName</key><string>MenuBarManager</string>
-<key>CFBundleDisplayName</key><string>MenuBarManager</string>
+<key>CFBundleDisplayName</key><string>Menu Bar Manager</string>
 <key>CFBundleExecutable</key><string>MenuBarManager</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
