@@ -40,7 +40,17 @@ final class MenuBarController {
         orderTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkOrder() }
         }
+        // Global monitors never see ⌘ or a mouse-down over the menu bar, so read the
+        // current modifier state a few times a second instead (cheap, no permission).
+        commandTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, NSEvent.modifierFlags.contains(.command), self.isInMenuBar(NSEvent.mouseLocation) else { return }
+                self.lastCommandInBar = Date()
+            }
+        }
     }
+
+    private var commandTimer: Timer?
 
     private var orderTimer: Timer?
     private var lastOrder: [String] = []
@@ -119,8 +129,15 @@ final class MenuBarController {
 
     /// When the bar last changed because of us; positions are unreliable for a while after.
     private var lastChange = Date.distantPast
+    /// When ⌘ was last held with the pointer over the menu bar. Only a ⌘-drag changes a
+    /// section from positions: macOS also moves items (and the chevron) on its own, at
+    /// launch, when a display comes or goes, or when the bar overflows behind the notch,
+    /// and those moves must never refile an app.
+    private var lastCommandInBar = Date.distantPast
 
-    func syncSectionsFromPositions() {
+    /// `force` is for our own drags (Move To in Settings), which aren't the user's ⌘-drag.
+    func syncSectionsFromPositions(force: Bool = false) {
+        guard force || Date().timeIntervalSince(lastCommandInBar) < 20 else { return }
         // While apps are swapped out, or while the bar is still settling after a show
         // or hide, items sit in places that say nothing about their sections.
         guard AppHider.shared.swappedOut.isEmpty, Date().timeIntervalSince(lastChange) > 3 else { return }
@@ -184,7 +201,7 @@ final class MenuBarController {
         try? await Task.sleep(for: .milliseconds(700))
         _ = await ItemMover.move(bundleID, toShown: section == .shown)
         lastChange = .distantPast
-        syncSectionsFromPositions()
+        syncSectionsFromPositions(force: true)
         if !wasExpanded { collapse() }
     }
 
