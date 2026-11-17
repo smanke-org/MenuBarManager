@@ -1,10 +1,10 @@
 import AppKit
-import SwiftData
 import MenuBarManagerKit
 
-/// Self-test for agents: runs the app's real functions on a test store,
-/// prints PASS or FAIL per check, and quits with exit code 0 or 1.
-///   APP_STORE=/tmp/MenuBarManager-self.store ~/Applications/MenuBarManager.app/Contents/MacOS/MenuBarManager --selftest
+/// Self-test for agents: runs the app's real functions, prints PASS or FAIL per check, and
+/// quits with exit code 0 or 1. It reads settings but never changes them, and starts no
+/// chevron, hiding, shortcut, sync or updater.
+///   /Applications/MenuBarManager.app/Contents/MacOS/MenuBarManager --selftest
 /// (tools/selftest.sh does this.) Add a check for every story with logic.
 @MainActor
 enum SelfTest {
@@ -14,37 +14,48 @@ enum SelfTest {
     private static var failures = 0
     private static var count = 0
 
-    static func runIfRequested(model: AppModel) {
+    static func runIfRequested() {
         guard requested else { return }
         // Print each line at once, so a crash keeps the lines before it.
         setvbuf(stdout, nil, _IOLBF, 0)
-        guard Store.isOverridden else {
-            print("SELFTEST refused: set APP_STORE to a file in /tmp")
-            finish(code: 1)
-            return
-        }
         Task {
             try? await Task.sleep(for: .seconds(0.5))
-            let context = model.container.mainContext
-            func items() -> [Item] { (try? context.fetch(FetchDescriptor<Item>())) ?? [] }
 
-            let before = items().count
-            model.addItem()
-            check("New Item adds one item", items().count == before + 1)
-            check("the new item is selected", model.selection != nil)
-
-            if let item = items().first(where: { $0.id == model.selection }) {
-                item.isStarred.toggle()
-                check("starring an item marks it starred", item.isStarred)
-                context.delete(item)
-                try? context.save()
-                check("deleting the item removes it", items().count == before)
+            check("1.10.0 is newer than 1.9.9", Version.isNewer("1.10.0", than: "1.9.9"))
+            check("a version is not newer than itself", !UpdateController.isNewer(AppInfo.version, than: AppInfo.version))
+            check("About has notes for this version", ReleaseNotes.bundled.contains { $0.version == AppInfo.version },
+                  "running \(AppInfo.version)")
+            check("Help shows the real shortcut", !Help.resolve("{shortcut}").contains("{"))
+            let topics = Set(Help.topics.map(\.id))
+            for tab in ["Items", "General", "Appearance"] {
+                check("Settings › \(tab)'s ? button has a Help page", topics.contains(Help.topic(forSettingsTab: tab)))
             }
-            check("titles are cleaned", ItemTitle.clean("  Buy   milk ") == "Buy milk")
+            for key in [AppSettings.Key.sections, AppSettings.Key.autoCollapseDelay, AppSettings.Key.showOnHover,
+                        AppSettings.Key.showOnScroll, AppSettings.Key.swapOnNotch, AppSettings.Key.hotKey,
+                        AppAppearance.key, "showInDock", UpdatePolicy.key] {
+                check("\(key) syncs between Macs", SettingsSync.keys.contains(key))
+            }
+            check("hidden apps leave the bar when collapsed",
+                  hides(["a": .hidden], expanded: false) == ["a"] && hides(["a": .hidden], expanded: true).isEmpty)
+            check("Always Hidden apps stay off the bar when expanded", hides(["a": .alwaysHidden], expanded: true) == ["a"])
+            check("Shown apps never leave the bar", hides(["a": .shown], expanded: false).isEmpty)
+            check("the URL scheme is registered", urlSchemes.contains("menubarmanager"))
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }
+    }
+
+    /// AppHider's rule for which apps are off the bar, on made-up sections.
+    private static func hides(_ sections: [String: MenuSection], expanded: Bool) -> Set<String> {
+        Set(sections.compactMap { id, section in
+            AppHider.isOffBar(section, expanded: expanded, includingAlwaysHidden: false) ? id : nil
+        })
+    }
+
+    private static var urlSchemes: [String] {
+        let types = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] ?? []
+        return types.flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
     }
 
     private static func check(_ name: String, _ ok: Bool, _ detail: String = "") {

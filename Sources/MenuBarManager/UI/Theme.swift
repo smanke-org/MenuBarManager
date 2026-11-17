@@ -85,6 +85,12 @@ final class ThemeStore {
         }
     }
 
+    /// Re-reads the accent after another Mac's settings were adopted (SettingsSync).
+    func reload() {
+        let stored = UserDefaults.standard.string(forKey: "appearance.accent") ?? Self.defaultID
+        if stored != themeID { themeID = stored }
+    }
+
     /// The Mac stores no accent number while the accent is Multicolor.
     private static func readMulticolor() -> Bool {
         UserDefaults.standard.object(forKey: "AppleAccentColor") == nil

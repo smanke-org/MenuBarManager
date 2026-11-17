@@ -57,7 +57,23 @@ final class AppHider {
 
     func section(for bundleID: String) -> MenuSection { sections[bundleID] ?? .shown }
 
+    /// Apps whose section just came from another Mac (settings sync). Their items may sit on
+    /// the other side of the chevron here, so their place in the bar doesn't change their
+    /// section until the two agree again or the user picks a section here.
+    var adopted: Set<String> = []
+
+    /// Re-reads the sections after another Mac's settings were adopted.
+    func reload() {
+        let raw = defaults.dictionary(forKey: Self.sectionsKey) as? [String: String] ?? [:]
+        let new = raw.compactMapValues(MenuSection.init(rawValue:))
+        guard new != sections else { return }
+        adopted.formUnion(Set(new.keys).union(sections.keys).filter { new[$0] != sections[$0] })
+        sections = new
+        reapply()
+    }
+
     func setSection(_ section: MenuSection, for bundleID: String) {
+        adopted.remove(bundleID)
         sections[bundleID] = section
         defaults.set(sections.mapValues(\.rawValue), forKey: Self.sectionsKey)
         reapply()
@@ -66,12 +82,17 @@ final class AppHider {
     /// Apps whose items are off the bar in this state.
     func appsToHide(expanded: Bool, includingAlwaysHidden: Bool) -> Set<String> {
         (expanded ? swappedOut : setAside).union(sections.compactMap { id, section in
-            switch section {
-            case .shown: nil
-            case .hidden: expanded ? nil : id
-            case .alwaysHidden: includingAlwaysHidden ? nil : id
-            }
+            Self.isOffBar(section, expanded: expanded, includingAlwaysHidden: includingAlwaysHidden) ? id : nil
         })
+    }
+
+    /// Whether an app in `section` is off the bar in this state.
+    static func isOffBar(_ section: MenuSection, expanded: Bool, includingAlwaysHidden: Bool) -> Bool {
+        switch section {
+        case .shown: false
+        case .hidden: !expanded
+        case .alwaysHidden: !includingAlwaysHidden
+        }
     }
 
     func apply(expanded: Bool, includingAlwaysHidden: Bool) {

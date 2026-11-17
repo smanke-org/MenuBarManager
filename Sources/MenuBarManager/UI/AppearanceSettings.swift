@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings > Appearance: the accent color. Light and dark mode follow the Mac.
+/// Settings › Appearance: the accent color. System, Light or Dark is in Settings › General.
 struct AppearanceSettings: View {
     @Bindable private var store = ThemeStore.shared
 

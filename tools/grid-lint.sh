@@ -2,11 +2,15 @@
 # Flags spacing numbers off the 4 pt grid, and views nudged with offset or position.
 # Usage: tools/grid-lint.sh [folder]      (default: Sources)
 # Allowed numbers: 0, 1, 2, and multiples of 4. Better: a token (Space.lg, theme.radius.md).
-# The token files (Theme.swift, Grid.swift, and a design kit's Tokens.swift) are skipped.
+# The token files (Theme.swift, Grid.swift, and a design kit's Tokens.swift) are skipped, and so
+# are the standard-set files kept the same in every one of the user's apps (Help, About, updates,
+# the ToolHUD hub, the shortcut editor), which follow their own layout.
 # Silence one line with a reason: // grid: ok <why>
 set -euo pipefail
 dir=${1:-${0:A:h:h}/Sources}
-find "$dir" -name '*.swift' -not -name 'Theme.swift' -not -name 'Grid.swift' -not -name 'Tokens.swift' -print0 | xargs -0 perl -ne '
+find "$dir" -name '*.swift' -not -name 'Theme.swift' -not -name 'Grid.swift' -not -name 'Tokens.swift' \
+  -not -name 'AboutWindow.swift' -not -name 'ReleaseNotes.swift' -not -name 'Help.swift' -not -name 'UpdateController.swift' \
+  -not -name 'UpdateInterval.swift' -not -name 'MenuHub.swift' -not -name 'ShortcutEditor.swift' -print0 | xargs -0 perl -ne '
   BEGIN { $count = 0 }
   if (!/grid: ok/) {
     my @bad;

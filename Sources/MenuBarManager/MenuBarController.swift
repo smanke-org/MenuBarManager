@@ -140,6 +140,11 @@ final class MenuBarController {
                 let current = hider.section(for: id)
                 guard current != .alwaysHidden else { continue }
                 let wanted: MenuSection = right ? .shown : .hidden
+                // A section adopted from another Mac wins until this bar agrees with it.
+                if hider.adopted.contains(id) {
+                    if wanted == current { hider.adopted.remove(id) }
+                    continue
+                }
                 if wanted != current { hider.setSection(wanted, for: id) }
             }
             return    // the first copy decides; the bars share one order
@@ -290,18 +295,73 @@ final class MenuBarController {
 
     // MARK: Menu
 
+    /// Right-click (or Control-click) on the chevron: the app's menu. ToolHUD's menu hub
+    /// shows the same menu (`menu()`).
     private func showMenu() {
-        let menu = NSMenu()
-        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",").target = self
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Menu Bar Manager", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        chevron.menu = menu
+        chevron.menu = menu()
         chevron.button?.performClick(nil)
         chevron.menu = nil
     }
 
-    @objc func openSettings() {
-        NSApp.activate()
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    /// The chevron's menu, built fresh each time so the update item and the shortcut are current.
+    func menu() -> NSMenu {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let toggleTitle = isExpanded ? "Hide Hidden Items" : "Show Hidden Items"
+        let toggle = menu.addItem(withTitle: toggleTitle, action: #selector(toggleFromMenu), target: self)
+        toggle.showIcon(isExpanded ? "chevron.right" : "chevron.left")
+        if let key = HotKeyCenter.shared.hotKey(for: .toggle) {
+            // Shown only; Carbon fires the shortcut, not the menu.
+            let shortcut = key.menuKeyEquivalent
+            toggle.keyEquivalent = shortcut.key
+            toggle.keyEquivalentModifierMask = shortcut.mask
+        }
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Settings…", action: #selector(openSettings), keyEquivalent: ",", target: self).showIcon("gearshape")
+        menu.addItem(withTitle: "Menu Bar Manager Help", action: #selector(openHelp), target: self).showIcon("questionmark.circle")
+        if let staged = AutoUpdater.shared.staged {
+            menu.addItem(withTitle: "Update to \(staged.version) Now", action: #selector(installStagedUpdate), target: self)
+                .showIcon("arrow.down.circle")
+        } else if let pending = UpdateAvailability.shared.pending {
+            menu.addItem(withTitle: "Update to \(pending)…", action: #selector(checkForUpdates), target: self)
+                .showIcon("arrow.down.circle").toolTip = "A newer release is available. Installing it needs your confirmation."
+        } else {
+            menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), target: self)
+                .showIcon("arrow.down.circle")
+        }
+        menu.addItem(withTitle: "About Menu Bar Manager", action: #selector(openAbout), target: self)
+        menu.addItem(withTitle: "Our other apps…", action: #selector(openOtherApps), target: self)
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit Menu Bar Manager", action: #selector(quit), keyEquivalent: "q", target: self)
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Menu Bar Manager \(AppInfo.displayVersion)", action: nil, target: nil).isEnabled = false
+        return menu
+    }
+
+    /// The chevron's current picture, for ToolHUD's row.
+    var chevronImage: NSImage? { chevron?.button?.image }
+
+    @objc private func toggleFromMenu() { toggle() }
+    @objc func openSettings() { SettingsWindow.shared.show() }
+    @objc private func openHelp() { HelpWindow.shared.show() }
+    @objc private func checkForUpdates() { UpdateController.checkForUpdates() }
+    @objc private func installStagedUpdate() { AutoUpdater.shared.installNow() }
+    @objc private func openAbout() { AppInfo.showAbout() }
+    /// The developer's site, which lists every app.
+    @objc private func openOtherApps() {
+        if let url = URL(string: "https://stevemanke.com/") { NSWorkspace.shared.open(url) }
+    }
+    @objc private func quit() { NSApp.terminate(nil) }
+}
+
+@MainActor
+extension NSMenu {
+    /// An item aimed at `target`.
+    @discardableResult
+    func addItem(withTitle title: String, action: Selector?, keyEquivalent: String = "", target: AnyObject?) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        item.target = target
+        addItem(item)
+        return item
     }
 }
