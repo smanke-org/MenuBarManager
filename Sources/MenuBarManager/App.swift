@@ -58,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Diagnostics.note("launch \(AppInfo.displayVersion) from \(Bundle.main.bundlePath)")
 
         MenuBarController.shared.install()
+        ClockPassThrough.shared.start()
         HotKeyCenter.shared.perform = { action in
             switch action {
             case .toggle: MenuBarController.shared.toggle()

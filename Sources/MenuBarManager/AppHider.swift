@@ -115,12 +115,33 @@ final class AppHider {
 
     func apply(expanded: Bool, includingAlwaysHidden: Bool) {
         lastState = (expanded, includingAlwaysHidden)
+        guard !isPaused else { return }
         restriction.hide(appsToHide(expanded: expanded, includingAlwaysHidden: includingAlwaysHidden))
     }
 
     private func reapply() {
+        guard !isPaused else { return }
         restriction.hide(appsToHide(expanded: lastState.expanded, includingAlwaysHidden: lastState.includingAlwaysHidden))
         restriction.refresh()
+    }
+
+    /// Whether macOS is hiding anything for us right now.
+    var isRestricting: Bool { !restriction.hiddenApps.isEmpty }
+
+    /// While macOS holds any menu bar restriction it also blocks Notification Center,
+    /// so ClockPassThrough lifts hiding while Notification Center is open. Changes made
+    /// meanwhile are kept and applied on resume.
+    private(set) var isPaused = false
+
+    func pauseHiding() {
+        isPaused = true
+        restriction.release()
+    }
+
+    func resumeHiding() {
+        guard isPaused else { return }
+        isPaused = false
+        reapply()
     }
 
     /// Everything back on the bar. Called at quit; a crash does the same on its own.

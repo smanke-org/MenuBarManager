@@ -14,6 +14,8 @@ final class BarRestriction {
 
     private var helperPID: pid_t = 0
     private var input: FileHandle?
+    private var exitWatch: DispatchSourceProcess?
+    private var lastStart = Date.distantPast
     private(set) var hiddenApps: Set<String> = []
 
     static var isAvailable: Bool {
@@ -70,6 +72,33 @@ final class BarRestriction {
         signal(SIGPIPE, SIG_IGN)
         helperPID = pid
         input = FileHandle(fileDescriptor: fds[1], closeOnDealloc: true)
+        lastStart = Date()
+        watchExit(of: pid)
+    }
+
+    /// If the helper dies, macOS drops its assertion and every hidden item comes back.
+    /// Start a new helper and hide them again, at most every 2 s if it keeps dying.
+    private func watchExit(of pid: pid_t) {
+        exitWatch?.cancel()
+        let source = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .main)
+        source.setEventHandler { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.helperPID == pid else { return }
+                waitpid(pid, nil, WNOHANG)
+                self.helperPID = 0
+                self.input = nil
+                NSLog("Menu Bar Manager: hiding helper exited; restarting it")
+                let delay = max(0, 2 - Date().timeIntervalSince(self.lastStart))
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    MainActor.assumeIsolated {
+                        guard self.helperPID == 0, !self.hiddenApps.isEmpty else { return }
+                        self.send(self.hiddenApps.sorted().joined(separator: ","))
+                    }
+                }
+            }
+        }
+        source.resume()
+        exitWatch = source
     }
 
     // MARK: The helper process
