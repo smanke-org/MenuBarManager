@@ -37,6 +37,10 @@ enum ReleaseNotes {
     /// Notes shipped inside the app, newest first. Add one for every version, so About shows
     /// it even before its GitHub release exists.
     static let bundled: [Entry] = [
+        Entry(version: "1.0.5", notes: """
+        - Clicking the Clock opens Notification Center again while apps are hidden. macOS blocks Notification Center while any menu bar item is hidden, so hidden items show while it's open and hide again when it closes.
+        - If the part of Menu Bar Manager that does the hiding stops unexpectedly, it restarts right away, so hidden apps stay hidden.
+        """),
         Entry(version: "1.0.4", notes: """
         - Only a ⌘-drag in the menu bar changes an app's section. Restarts, displays coming and going, and macOS moving items no longer move apps between Shown and Hidden.
         """),
